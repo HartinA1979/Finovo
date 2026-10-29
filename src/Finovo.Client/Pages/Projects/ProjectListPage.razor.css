@@ -1,0 +1,172 @@
+/* ── Layout wrapper ── */
+.project-main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    min-width: 0;
+}
+
+/* ── Filter bar ── */
+.project-filters {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--fn-border);
+    background: var(--fn-surface);
+    flex-shrink: 0;
+}
+
+.project-filters .mud-select {
+    min-width: 160px;
+    max-width: 200px;
+}
+
+.project-filters__new {
+    margin-left: auto;
+}
+
+/* ── Card grid ── */
+.project-grid {
+    flex: 1;
+    overflow: auto;
+    padding: 16px;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    align-content: start;
+    gap: var(--fn-gap);
+}
+
+.project-grid__loading {
+    grid-column: 1 / -1;
+    display: flex;
+    justify-content: center;
+    padding: 40px;
+}
+
+.project-grid__empty {
+    grid-column: 1 / -1;
+    color: var(--fn-text-sub);
+    font-size: 13px;
+    padding: 20px 0;
+}
+
+/* ── Project cards ── */
+.project-card {
+    background: var(--fn-surface);
+    border-radius: var(--fn-radius-card);
+    border: 2px solid var(--fn-border);
+    padding: 16px;
+    cursor: pointer;
+    transition: border-color 0.15s, box-shadow 0.15s;
+    box-shadow: var(--fn-shadow);
+}
+
+.project-card:hover {
+    box-shadow: var(--fn-shadow-hover);
+}
+
+.project-card--selected {
+    border-color: var(--fn-primary);
+    box-shadow: 0 0 0 3px rgba(59, 91, 219, 0.125);
+}
+
+.project-card__top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 10px;
+}
+
+.project-card__name {
+    font-family: var(--fn-font-display);
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--fn-text);
+    margin-bottom: 4px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.project-card__customer {
+    font-size: 11px;
+    color: var(--fn-text-sub);
+    margin-bottom: 12px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.project-card__footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 10px;
+    border-top: 1px solid var(--fn-border);
+    font-size: 10px;
+    color: var(--fn-text-sub);
+}
+
+.project-card__invoiced {
+    font-family: var(--fn-font-mono);
+    font-weight: 600;
+    color: var(--fn-accent);
+}
+
+/* ── Side panel content ── */
+.project-panel__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 12px;
+    gap: 8px;
+}
+
+.project-panel__header-text {
+    min-width: 0;
+}
+
+.project-panel__name {
+    font-family: var(--fn-font-display);
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--fn-text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.project-panel__customer {
+    font-size: 12px;
+    color: var(--fn-text-sub);
+    margin-top: 4px;
+}
+
+.project-panel__status {
+    margin-bottom: 16px;
+}
+
+.project-panel__description {
+    font-size: 12px;
+    color: var(--fn-text-sub);
+    line-height: 1.5;
+    margin-bottom: 16px;
+}
+
+.project-panel__gross {
+    font-weight: 700;
+    color: var(--fn-text);
+}
+
+.project-panel__btns {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 20px;
+}
+
+.project-panel__btns .fn-btn {
+    justify-content: center;
+}

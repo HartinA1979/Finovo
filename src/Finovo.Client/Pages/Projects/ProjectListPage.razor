@@ -1,0 +1,169 @@
+@page "/projects"
+@inject ProjectService ProjectService
+@inject CustomerService CustomerService
+@inject ISnackbar Snackbar
+@inject NavigationManager Nav
+
+<PageTitle>Projekte – Finovo</PageTitle>
+
+<div class="fn-split">
+    <!-- Card grid area -->
+    <div class="project-main">
+        <div class="project-filters">
+            <MudSelect T="Guid?" Value="_customerFilter" ValueChanged="OnCustomerChanged"
+                       Label="Kunde" Variant="Variant.Outlined" Dense="true" Clearable="true">
+                @foreach (var c in _customers)
+                {
+                    <MudSelectItem Value="@((Guid?)c.Id)">@c.Name</MudSelectItem>
+                }
+            </MudSelect>
+            <MudSelect T="string?" Value="_statusFilter" ValueChanged="OnStatusChanged"
+                       Label="Status" Variant="Variant.Outlined" Dense="true" Clearable="true">
+                <MudSelectItem Value="@((string?)null)">Alle Status</MudSelectItem>
+                <MudSelectItem Value="@("Open")">Offen</MudSelectItem>
+                <MudSelectItem Value="@("Completed")">Abgeschlossen</MudSelectItem>
+                <MudSelectItem Value="@("Invoiced")">Verrechnet</MudSelectItem>
+                <MudSelectItem Value="@("Archived")">Archiviert</MudSelectItem>
+            </MudSelect>
+            <a href="/projects/new" class="fn-btn fn-btn--primary project-filters__new">
+                <MudIcon Icon="@Icons.Material.Filled.Add" Size="Size.Small" />
+                Neues Projekt
+            </a>
+        </div>
+
+        <div class="project-grid">
+            @if (_isLoading)
+            {
+                <div class="project-grid__loading">
+                    <MudProgressCircular Indeterminate="true" Color="Color.Primary" />
+                </div>
+            }
+            else if (_projects.Count == 0)
+            {
+                <div class="project-grid__empty">Keine Projekte gefunden.</div>
+            }
+            else
+            {
+                @foreach (var p in _projects)
+                {
+                    <div class="project-card @(_selected?.Id == p.Id ? "project-card--selected" : "")"
+                         @onclick="@(() => Select(p))">
+                        <div class="project-card__top">
+                            <span class="fn-badge">@p.Id.ToString()[..8]</span>
+                            <ProjectStatusChip Status="@p.Status" />
+                        </div>
+                        <div class="project-card__name">@p.Name</div>
+                        <div class="project-card__customer">@p.CustomerName</div>
+                        <div class="project-card__footer">
+                            <span>@p.ServiceItemCount Leistungen</span>
+                            <span class="project-card__invoiced">
+                                @p.TotalGross.ToString("F2") @p.Currency
+                            </span>
+                        </div>
+                    </div>
+                }
+            }
+        </div>
+    </div>
+
+    <!-- Side panel -->
+    <div class="@($"fn-split__panel {(_selected is null ? "fn-split__panel--hidden" : "")}")">
+        @if (_selected is not null)
+        {
+            <div class="project-panel__header">
+                <div class="project-panel__header-text">
+                    <div class="project-panel__name">@_selected.Name</div>
+                    <div class="project-panel__customer">@_selected.CustomerName</div>
+                </div>
+                <button class="fn-btn fn-btn--icon" @onclick="ClearSelection">✕</button>
+            </div>
+
+            <div class="project-panel__status">
+                <ProjectStatusChip Status="@_selected.Status" />
+            </div>
+
+            @if (!string.IsNullOrEmpty(_selected.Description))
+            {
+                <div class="project-panel__description">@_selected.Description</div>
+            }
+
+            <div class="fn-section-title">Details</div>
+            <div class="fn-data-row">
+                <span class="fn-data-row__label">Leistungen</span>
+                <span class="fn-data-row__value">@_selected.ServiceItemCount Pos.</span>
+            </div>
+            <div class="fn-data-row">
+                <span class="fn-data-row__label">Netto</span>
+                <span class="fn-data-row__value fn-data-row__value--mono">
+                    @_selected.TotalNet.ToString("F2") @_selected.Currency
+                </span>
+            </div>
+            <div class="fn-data-row">
+                <span class="fn-data-row__label">Brutto</span>
+                <span class="fn-data-row__value fn-data-row__value--mono project-panel__gross">
+                    @_selected.TotalGross.ToString("F2") @_selected.Currency
+                </span>
+            </div>
+            <div class="fn-data-row">
+                <span class="fn-data-row__label">Angelegt</span>
+                <span class="fn-data-row__value">@_selected.CreatedAt.ToString("dd.MM.yyyy")</span>
+            </div>
+
+            <div class="project-panel__btns">
+                <a href="@($"/projects/{_selected.Id}")" class="fn-btn fn-btn--primary">
+                    <MudIcon Icon="@Icons.Material.Filled.OpenInNew" Size="Size.Small" />
+                    Details öffnen
+                </a>
+                <a href="@($"/projects/{_selected.Id}/edit")" class="fn-btn fn-btn--outlined">
+                    <MudIcon Icon="@Icons.Material.Filled.Edit" Size="Size.Small" />
+                    Bearbeiten
+                </a>
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    private List<ProjectSummaryModel> _projects = [];
+    private List<CustomerModel> _customers = [];
+    private ProjectSummaryModel? _selected;
+    private bool _isLoading = true;
+    private Guid? _customerFilter;
+    private string? _statusFilter;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await Task.WhenAll(LoadCustomersAsync(), LoadProjectsAsync());
+    }
+
+    private async Task LoadCustomersAsync()
+    {
+        try { _customers = await CustomerService.GetAllAsync(isActive: true); }
+        catch { }
+    }
+
+    private async Task LoadProjectsAsync()
+    {
+        _isLoading = true;
+        try { _projects = await ProjectService.GetAllAsync(_customerFilter, _statusFilter); }
+        catch { Snackbar.Add("Fehler beim Laden der Projekte.", Severity.Error); }
+        finally { _isLoading = false; }
+    }
+
+    private async Task OnCustomerChanged(Guid? value)
+    {
+        _customerFilter = value;
+        await LoadProjectsAsync();
+    }
+
+    private async Task OnStatusChanged(string? value)
+    {
+        _statusFilter = value;
+        await LoadProjectsAsync();
+    }
+
+    private void Select(ProjectSummaryModel project) =>
+        _selected = _selected?.Id == project.Id ? null : project;
+
+    private void ClearSelection() => _selected = null;
+}

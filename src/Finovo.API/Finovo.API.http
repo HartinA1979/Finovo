@@ -1,0 +1,6 @@
+@Finovo.API_HostAddress = http://localhost:5155
+
+GET {{Finovo.API_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

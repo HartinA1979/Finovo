@@ -1,0 +1,52 @@
+<MudThemeProvider Theme="_theme" />
+<MudPopoverProvider />
+<MudDialogProvider />
+<MudSnackbarProvider />
+
+<Router AppAssembly="@typeof(App).Assembly" NotFoundPage="typeof(Pages.NotFound)">
+    <Found Context="routeData">
+        <RouteView RouteData="@routeData" DefaultLayout="@typeof(MainLayout)" />
+        <FocusOnNavigate RouteData="@routeData" Selector="h1" />
+    </Found>
+</Router>
+
+@code {
+    private readonly MudTheme _theme = new()
+    {
+        PaletteLight = new PaletteLight
+        {
+            Primary          = "#3b5bdb",
+            PrimaryDarken    = "#2f4ac7",
+            PrimaryLighten   = "#5c7aff",
+            Secondary        = "#12b886",
+            AppbarBackground = "#ffffff",
+            AppbarText       = "#1c2033",
+            Background       = "#f7f8fc",
+            Surface          = "#ffffff",
+            DrawerBackground = "#1c2540",
+            DrawerText       = "#6b84c4",
+            DrawerIcon       = "#6b84c4",
+            TextPrimary      = "#1c2033",
+            TextSecondary    = "#6c7491",
+            ActionDefault    = "#6c7491",
+            Divider          = "#e8eaf0",
+            TableLines       = "#e8eaf0",
+            Success          = "#12b886",
+            Warning          = "#f59f00",
+            Error            = "#e05252",
+            Info             = "#3b5bdb",
+        },
+        Typography = new Typography
+        {
+            Default = new DefaultTypography { FontFamily = ["Inter", "sans-serif"] },
+            H5      = new H5Typography     { FontFamily = ["DM Sans", "sans-serif"], FontWeight = "700" },
+            H6      = new H6Typography     { FontFamily = ["DM Sans", "sans-serif"], FontWeight = "700" },
+        },
+        LayoutProperties = new LayoutProperties
+        {
+            DrawerWidthLeft     = "200px",
+            DrawerMiniWidthLeft = "64px",
+            AppbarHeight        = "52px",
+        },
+    };
+}

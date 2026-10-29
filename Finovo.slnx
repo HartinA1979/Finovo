@@ -1,0 +1,17 @@
+<Solution>
+  <StartupProjects>
+    <Project Path="src/Finovo.Client/Finovo.Client.csproj" />
+  </StartupProjects>
+  <Folder Name="/src/">
+    <Project Path="src/Finovo.API/Finovo.API.csproj" />
+    <Project Path="src/Finovo.Application/Finovo.Application.csproj" />
+    <Project Path="src/Finovo.Client/Finovo.Client.csproj" />
+    <Project Path="src/Finovo.Domain/Finovo.Domain.csproj" />
+    <Project Path="src/Finovo.Infrastructure/Finovo.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Finovo.API.IntegrationTests/Finovo.API.IntegrationTests.csproj" />
+    <Project Path="tests/Finovo.Application.Tests/Finovo.Application.Tests.csproj" />
+    <Project Path="tests/Finovo.Domain.Tests/Finovo.Domain.Tests.csproj" />
+  </Folder>
+</Solution>

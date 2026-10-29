@@ -1,0 +1,30 @@
+.fn-data-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--fn-border);
+  gap: 12px;
+}
+
+.fn-data-row:last-child {
+  border-bottom: none;
+}
+
+.fn-data-row__label {
+  font-size: 12px;
+  color: var(--fn-text-sub);
+  flex-shrink: 0;
+}
+
+.fn-data-row__value {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--fn-text);
+  text-align: right;
+}
+
+.fn-data-row__value--mono {
+  font-family: var(--fn-font-mono);
+  font-size: 11px;
+}

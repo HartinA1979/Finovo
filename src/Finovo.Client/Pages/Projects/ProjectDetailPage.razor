@@ -1,0 +1,354 @@
+@page "/projects/{Id:guid}"
+@inject ProjectService ProjectService
+@inject ISnackbar Snackbar
+@inject IDialogService DialogService
+@inject NavigationManager Nav
+
+<PageTitle>@(project?.Name ?? "Projekt") – Finovo</PageTitle>
+
+@if (isLoading)
+{
+    <MudProgressCircular Indeterminate="true" />
+}
+else if (project is null)
+{
+    <MudText Color="Color.Error">Projekt nicht gefunden.</MudText>
+}
+else
+{
+    <!-- Header -->
+    <MudStack Row="true" AlignItems="AlignItems.Center" Class="mb-4" Spacing="2">
+        <MudIconButton Icon="@Icons.Material.Filled.ArrowBack"
+                       OnClick="@(() => Nav.NavigateTo("/projects"))" />
+        <MudText Typo="Typo.h5">@project.Name</MudText>
+        <MudChip T="string"
+                 Color="@StatusColor(project.Status)"
+                 Size="Size.Small"
+                 Variant="Variant.Filled">
+            @StatusLabel(project.Status)
+        </MudChip>
+        <MudSpacer />
+        <!-- Status-Aktionen -->
+        @if (project.Status == "Open")
+        {
+            <MudButton Variant="Variant.Outlined"
+                       Color="Color.Success"
+                       StartIcon="@Icons.Material.Filled.CheckCircle"
+                       OnClick="CompleteProject"
+                       Disabled="project.ServiceItems.Count == 0">
+                Abschließen
+            </MudButton>
+        }
+        @if (project.Status == "Completed")
+        {
+            <MudButton Variant="Variant.Outlined"
+                       Color="Color.Warning"
+                       StartIcon="@Icons.Material.Filled.Refresh"
+                       OnClick="ReopenProject">
+                Wieder öffnen
+            </MudButton>
+        }
+        @if (project.Status is "Open" or "Completed")
+        {
+            <MudIconButton Icon="@Icons.Material.Filled.Edit"
+                           Title="Bearbeiten"
+                           OnClick="@(() => Nav.NavigateTo("/projects/" + Id + "/edit"))" />
+            <MudIconButton Icon="@Icons.Material.Filled.Archive"
+                           Title="Archivieren"
+                           Color="Color.Default"
+                           OnClick="ArchiveProject" />
+        }
+    </MudStack>
+
+    <!-- Info-Karte -->
+    <MudGrid Spacing="3" Class="mb-4">
+        <MudItem xs="12" md="6">
+            <MudPaper Class="pa-4" Elevation="1">
+                <MudText Typo="Typo.subtitle2" Color="Color.Secondary" Class="mb-2">Projektinfo</MudText>
+                <MudText Typo="Typo.body1"><b>Kunde:</b> @project.CustomerName</MudText>
+                @if (!string.IsNullOrWhiteSpace(project.Description))
+                {
+                    <MudText Typo="Typo.body2" Class="mt-2" Style="white-space:pre-wrap">@project.Description</MudText>
+                }
+                <MudText Typo="Typo.caption" Color="Color.Secondary" Class="mt-2">
+                    Erstellt: @project.CreatedAt.ToString("dd.MM.yyyy")
+                </MudText>
+            </MudPaper>
+        </MudItem>
+        <MudItem xs="12" md="6">
+            <MudPaper Class="pa-4" Elevation="1">
+                <MudText Typo="Typo.subtitle2" Color="Color.Secondary" Class="mb-2">Summen</MudText>
+                <MudSimpleTable Dense="true" Elevation="0">
+                    <tbody>
+                        <tr>
+                            <td>Netto</td>
+                            <td align="right">@project.TotalNet.ToString("F2") @project.Currency</td>
+                        </tr>
+                        <tr>
+                            <td>MwSt.</td>
+                            <td align="right">@((project.TotalGross - project.TotalNet).ToString("F2")) @project.Currency</td>
+                        </tr>
+                        <tr style="font-weight:bold">
+                            <td>Brutto</td>
+                            <td align="right">@project.TotalGross.ToString("F2") @project.Currency</td>
+                        </tr>
+                    </tbody>
+                </MudSimpleTable>
+            </MudPaper>
+        </MudItem>
+    </MudGrid>
+
+    <!-- Leistungen -->
+    <MudPaper Class="pa-4" Elevation="1">
+        <MudStack Row="true" AlignItems="AlignItems.Center" Class="mb-3">
+            <MudText Typo="Typo.subtitle1"><b>Leistungen</b></MudText>
+            <MudSpacer />
+            @if (project.Status is "Open" or "Completed")
+            {
+                <MudButton Variant="Variant.Outlined"
+                           Color="Color.Primary"
+                           StartIcon="@Icons.Material.Filled.Add"
+                           Size="Size.Small"
+                           OnClick="OpenAddServiceItemDialog">
+                    Leistung hinzufügen
+                </MudButton>
+            }
+        </MudStack>
+
+        @if (project.ServiceItems.Count == 0)
+        {
+            <MudText Color="Color.Secondary" Class="pa-2">Noch keine Leistungen erfasst.</MudText>
+        }
+        else
+        {
+            <MudTable Items="project.ServiceItems" Dense="true" Hover="true" Elevation="0">
+                <HeaderContent>
+                    <MudTh>Beschreibung</MudTh>
+                    <MudTh Style="text-align:right">Stunden</MudTh>
+                    <MudTh Style="text-align:right">Satz</MudTh>
+                    <MudTh Style="text-align:right">MwSt.</MudTh>
+                    <MudTh Style="text-align:right">Netto</MudTh>
+                    <MudTh Style="text-align:right">Brutto</MudTh>
+                    @if (project.Status is "Open" or "Completed")
+                    {
+                        <MudTh Style="width:80px"></MudTh>
+                    }
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd DataLabel="Beschreibung">@context.Description</MudTd>
+                    <MudTd DataLabel="Stunden" Style="text-align:right">@context.Hours.ToString("F2")</MudTd>
+                    <MudTd DataLabel="Satz" Style="text-align:right">@context.HourlyRateAmount.ToString("F2") @context.Currency</MudTd>
+                    <MudTd DataLabel="MwSt." Style="text-align:right">@context.TaxRatePercent %</MudTd>
+                    <MudTd DataLabel="Netto" Style="text-align:right">@context.TotalNet.ToString("F2")</MudTd>
+                    <MudTd DataLabel="Brutto" Style="text-align:right"><b>@context.TotalGross.ToString("F2")</b></MudTd>
+                    @if (project.Status is "Open" or "Completed")
+                    {
+                        <MudTd>
+                            <MudIconButton Icon="@Icons.Material.Filled.Edit"
+                                           Size="Size.Small"
+                                           OnClick="@(() => OpenEditServiceItemDialog(context))" />
+                            <MudIconButton Icon="@Icons.Material.Filled.Delete"
+                                           Size="Size.Small"
+                                           Color="Color.Error"
+                                           OnClick="@(() => RemoveServiceItem(context.Id))" />
+                        </MudTd>
+                    }
+                </RowTemplate>
+            </MudTable>
+        }
+    </MudPaper>
+}
+
+@code {
+    [Parameter] public Guid Id { get; set; }
+
+    private ProjectModel? project;
+    private bool isLoading = true;
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        isLoading = true;
+        try
+        {
+            project = await ProjectService.GetByIdAsync(Id);
+        }
+        catch
+        {
+            Snackbar.Add("Fehler beim Laden des Projekts.", Severity.Error);
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    // ── Status-Aktionen ───────────────────────────────────────────────────────
+
+    private async Task CompleteProject()
+    {
+        try
+        {
+            await ProjectService.CompleteAsync(Id);
+            Snackbar.Add("Projekt abgeschlossen.", Severity.Success);
+            await LoadAsync();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add("Fehler: " + ex.Message, Severity.Error);
+        }
+    }
+
+    private async Task ReopenProject()
+    {
+        try
+        {
+            await ProjectService.ReopenAsync(Id);
+            Snackbar.Add("Projekt wieder geöffnet.", Severity.Success);
+            await LoadAsync();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add("Fehler: " + ex.Message, Severity.Error);
+        }
+    }
+
+    private async Task ArchiveProject()
+    {
+        var parameters = new DialogParameters<ConfirmDialog>
+        {
+            { x => x.ContentText, "Soll das Projekt wirklich archiviert werden?" },
+            { x => x.ButtonText, "Archivieren" },
+            { x => x.Color, Color.Warning },
+        };
+        var dialog = await DialogService.ShowAsync<ConfirmDialog>("Projekt archivieren", parameters);
+        var result = await dialog.Result;
+        if (result is { Canceled: false })
+        {
+            try
+            {
+                await ProjectService.ArchiveAsync(Id);
+                Snackbar.Add("Projekt archiviert.", Severity.Success);
+                Nav.NavigateTo("/projects");
+            }
+            catch (Exception ex)
+            {
+                Snackbar.Add("Fehler: " + ex.Message, Severity.Error);
+            }
+        }
+    }
+
+    // ── Service Items ─────────────────────────────────────────────────────────
+
+    private async Task OpenAddServiceItemDialog()
+    {
+        var model = new ServiceItemDialog.ServiceItemFormModel();
+        var parameters = new DialogParameters<ServiceItemDialog>
+        {
+            { x => x.Model, model },
+            { x => x.IsEdit, false },
+        };
+        var dialog = await DialogService.ShowAsync<ServiceItemDialog>("Leistung hinzufügen", parameters);
+        var result = await dialog.Result;
+        if (result is { Canceled: false, Data: ServiceItemDialog.ServiceItemFormModel filled })
+        {
+            try
+            {
+                await ProjectService.AddServiceItemAsync(Id, new ServiceItemRequest(
+                    filled.Description,
+                    filled.Hours,
+                    filled.HourlyRateAmount,
+                    "EUR",
+                    filled.TaxRatePercent));
+                Snackbar.Add("Leistung hinzugefügt.", Severity.Success);
+                await LoadAsync();
+            }
+            catch (Exception ex)
+            {
+                Snackbar.Add("Fehler: " + ex.Message, Severity.Error);
+            }
+        }
+    }
+
+    private async Task OpenEditServiceItemDialog(ServiceItemModel item)
+    {
+        var model = new ServiceItemDialog.ServiceItemFormModel
+        {
+            Description = item.Description,
+            Hours = item.Hours,
+            HourlyRateAmount = item.HourlyRateAmount,
+            TaxRatePercent = item.TaxRatePercent,
+        };
+        var parameters = new DialogParameters<ServiceItemDialog>
+        {
+            { x => x.Model, model },
+            { x => x.IsEdit, true },
+        };
+        var dialog = await DialogService.ShowAsync<ServiceItemDialog>("Leistung bearbeiten", parameters);
+        var result = await dialog.Result;
+        if (result is { Canceled: false, Data: ServiceItemDialog.ServiceItemFormModel filled })
+        {
+            try
+            {
+                await ProjectService.UpdateServiceItemAsync(Id, item.Id, new ServiceItemRequest(
+                    filled.Description,
+                    filled.Hours,
+                    filled.HourlyRateAmount,
+                    "EUR",
+                    filled.TaxRatePercent));
+                Snackbar.Add("Leistung aktualisiert.", Severity.Success);
+                await LoadAsync();
+            }
+            catch (Exception ex)
+            {
+                Snackbar.Add("Fehler: " + ex.Message, Severity.Error);
+            }
+        }
+    }
+
+    private async Task RemoveServiceItem(Guid itemId)
+    {
+        var parameters = new DialogParameters<ConfirmDialog>
+        {
+            { x => x.ContentText, "Soll diese Leistung wirklich gelöscht werden?" },
+            { x => x.ButtonText, "Löschen" },
+            { x => x.Color, Color.Error },
+        };
+        var dialog = await DialogService.ShowAsync<ConfirmDialog>("Leistung löschen", parameters);
+        var result = await dialog.Result;
+        if (result is { Canceled: false })
+        {
+            try
+            {
+                await ProjectService.RemoveServiceItemAsync(Id, itemId);
+                Snackbar.Add("Leistung gelöscht.", Severity.Success);
+                await LoadAsync();
+            }
+            catch (Exception ex)
+            {
+                Snackbar.Add("Fehler: " + ex.Message, Severity.Error);
+            }
+        }
+    }
+
+    // ── Helpers ───────────────────────────────────────────────────────────────
+
+    private static Color StatusColor(string status) => status switch
+    {
+        "Open"      => Color.Info,
+        "Completed" => Color.Success,
+        "Invoiced"  => Color.Primary,
+        "Archived"  => Color.Default,
+        _           => Color.Default
+    };
+
+    private static string StatusLabel(string status) => status switch
+    {
+        "Open"      => "Offen",
+        "Completed" => "Abgeschlossen",
+        "Invoiced"  => "Verrechnet",
+        "Archived"  => "Archiviert",
+        _           => status
+    };
+}

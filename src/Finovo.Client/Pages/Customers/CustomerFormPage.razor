@@ -1,0 +1,244 @@
+@page "/customers/new"
+@page "/customers/{Id:guid}/edit"
+@inject CustomerService CustomerService
+@inject ISnackbar Snackbar
+@inject NavigationManager Nav
+
+<PageTitle>@(IsEditMode ? "Kunde bearbeiten" : "Neuer Kunde") – Finovo</PageTitle>
+
+<MudText Typo="Typo.h5" Class="mb-4">@(IsEditMode ? "Kunde bearbeiten" : "Neuer Kunde")</MudText>
+
+@if (isLoading)
+{
+    <MudProgressCircular Indeterminate="true" />
+}
+else
+{
+    <MudPaper Class="pa-6" Elevation="1" MaxWidth="700">
+        <MudForm @ref="form" @bind-IsValid="isValid">
+
+            <MudText Typo="Typo.subtitle1" Class="mb-3">Allgemein</MudText>
+
+            <MudTextField @bind-Value="model.Name"
+                          Label="Name *"
+                          Variant="Variant.Outlined"
+                          Required="true"
+                          RequiredError="Name ist erforderlich."
+                          MaxLength="200"
+                          Class="mb-3" />
+
+            <MudTextField @bind-Value="model.CompanyName"
+                          Label="Firma"
+                          Variant="Variant.Outlined"
+                          MaxLength="200"
+                          Class="mb-3" />
+
+            <MudTextField @bind-Value="model.Email"
+                          Label="E-Mail"
+                          Variant="Variant.Outlined"
+                          InputType="InputType.Email"
+                          MaxLength="256"
+                          Class="mb-3" />
+
+            <MudTextField @bind-Value="model.Phone"
+                          Label="Telefon"
+                          Variant="Variant.Outlined"
+                          MaxLength="50"
+                          Class="mb-3" />
+
+            <MudTextField @bind-Value="model.VatNumber"
+                          Label="UID-Nummer"
+                          Variant="Variant.Outlined"
+                          MaxLength="50"
+                          Class="mb-4" />
+
+            <MudDivider Class="mb-4" />
+            <MudText Typo="Typo.subtitle1" Class="mb-3">Adresse (optional)</MudText>
+
+            <MudGrid Spacing="2">
+                <MudItem xs="12">
+                    <MudTextField @bind-Value="model.Street"
+                                  Label="Straße"
+                                  Variant="Variant.Outlined"
+                                  MaxLength="200" />
+                </MudItem>
+                <MudItem xs="6">
+                    <MudTextField @bind-Value="model.ZipCode"
+                                  Label="PLZ"
+                                  Variant="Variant.Outlined"
+                                  MaxLength="20" />
+                </MudItem>
+                <MudItem xs="6">
+                    <MudTextField @bind-Value="model.City"
+                                  Label="Ort"
+                                  Variant="Variant.Outlined"
+                                  MaxLength="100" />
+                </MudItem>
+                <MudItem xs="12" Class="mb-4">
+                    <MudTextField @bind-Value="model.Country"
+                                  Label="Land"
+                                  Variant="Variant.Outlined"
+                                  MaxLength="100" />
+                </MudItem>
+            </MudGrid>
+
+            <MudDivider Class="mb-4" />
+            <MudText Typo="Typo.subtitle1" Class="mb-3">Notizen</MudText>
+
+            <MudTextField @bind-Value="model.Notes"
+                          Label="Notizen"
+                          Variant="Variant.Outlined"
+                          Lines="4"
+                          MaxLength="2000"
+                          Class="mb-4" />
+
+            <MudStack Row="true" Spacing="2" Justify="Justify.FlexEnd">
+                <MudButton Variant="Variant.Text"
+                           OnClick="Cancel">
+                    Abbrechen
+                </MudButton>
+                <MudButton Variant="Variant.Filled"
+                           Color="Color.Primary"
+                           StartIcon="@Icons.Material.Filled.Save"
+                           OnClick="SaveAsync"
+                           Disabled="isSaving">
+                    @(isSaving ? "Wird gespeichert..." : "Speichern")
+                </MudButton>
+            </MudStack>
+
+        </MudForm>
+    </MudPaper>
+}
+
+@code {
+    [Parameter] public Guid? Id { get; set; }
+
+    private bool IsEditMode => Id.HasValue;
+
+    private MudForm form = null!;
+    private bool isValid;
+    private bool isLoading = true;
+    private bool isSaving;
+
+    private CustomerFormModel model = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (IsEditMode)
+        {
+            try
+            {
+                var customer = await CustomerService.GetByIdAsync(Id!.Value);
+                if (customer is null)
+                {
+                    Snackbar.Add("Kunde nicht gefunden.", Severity.Error);
+                    Nav.NavigateTo("/customers");
+                    return;
+                }
+
+                model = new CustomerFormModel
+                {
+                    Name = customer.Name,
+                    CompanyName = customer.CompanyName,
+                    Email = customer.Email,
+                    Phone = customer.Phone,
+                    VatNumber = customer.VatNumber,
+                    Notes = customer.Notes,
+                    Street = customer.Address?.Street,
+                    City = customer.Address?.City,
+                    ZipCode = customer.Address?.ZipCode,
+                    Country = customer.Address?.Country,
+                };
+            }
+            catch
+            {
+                Snackbar.Add("Fehler beim Laden des Kunden.", Severity.Error);
+                Nav.NavigateTo("/customers");
+                return;
+            }
+        }
+
+        isLoading = false;
+    }
+
+    private async Task SaveAsync()
+    {
+        await form.Validate();
+        if (!isValid) return;
+
+        isSaving = true;
+        try
+        {
+            var address = BuildAddress();
+
+            if (IsEditMode)
+            {
+                await CustomerService.UpdateAsync(Id!.Value, new UpdateCustomerRequest(
+                    model.Name!,
+                    model.CompanyName,
+                    model.Email,
+                    model.Phone,
+                    address,
+                    model.VatNumber,
+                    model.Notes));
+
+                Snackbar.Add("Kunde aktualisiert.", Severity.Success);
+            }
+            else
+            {
+                await CustomerService.CreateAsync(new CreateCustomerRequest(
+                    model.Name!,
+                    model.CompanyName,
+                    model.Email,
+                    model.Phone,
+                    address,
+                    model.VatNumber,
+                    model.Notes));
+
+                Snackbar.Add("Kunde erstellt.", Severity.Success);
+            }
+
+            Nav.NavigateTo("/customers");
+        }
+        catch
+        {
+            Snackbar.Add("Fehler beim Speichern.", Severity.Error);
+        }
+        finally
+        {
+            isSaving = false;
+        }
+    }
+
+    private AddressModel? BuildAddress()
+    {
+        if (string.IsNullOrWhiteSpace(model.Street) &&
+            string.IsNullOrWhiteSpace(model.City) &&
+            string.IsNullOrWhiteSpace(model.ZipCode) &&
+            string.IsNullOrWhiteSpace(model.Country))
+            return null;
+
+        // If any address field is filled, all are required (validated server-side)
+        return new AddressModel(
+            model.Street ?? string.Empty,
+            model.City ?? string.Empty,
+            model.ZipCode ?? string.Empty,
+            model.Country ?? string.Empty);
+    }
+
+    private void Cancel() => Nav.NavigateTo("/customers");
+
+    private sealed class CustomerFormModel
+    {
+        public string? Name { get; set; }
+        public string? CompanyName { get; set; }
+        public string? Email { get; set; }
+        public string? Phone { get; set; }
+        public string? VatNumber { get; set; }
+        public string? Notes { get; set; }
+        public string? Street { get; set; }
+        public string? City { get; set; }
+        public string? ZipCode { get; set; }
+        public string? Country { get; set; }
+    }
+}

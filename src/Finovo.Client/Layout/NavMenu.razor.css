@@ -1,0 +1,76 @@
+.nav-list {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.nav-section-label {
+    font-size: 9px;
+    font-weight: 600;
+    color: #4a5a80;
+    text-transform: uppercase;
+    letter-spacing: 0.9px;
+    padding: 6px 8px 4px;
+    white-space: nowrap;
+}
+
+.nav-divider {
+    height: 1px;
+    background: rgba(255, 255, 255, 0.07);
+    margin: 6px 4px;
+}
+
+.nav-item {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    height: 40px;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    background: transparent;
+    color: var(--fn-sidebar-text);
+    font-family: var(--fn-font-sans);
+    transition: background 0.15s, color 0.15s;
+    overflow: hidden;
+    white-space: nowrap;
+    text-decoration: none;
+    box-sizing: border-box;
+}
+
+.nav-item--collapsed {
+    justify-content: center;
+    padding: 0;
+    gap: 0;
+}
+
+.nav-item--expanded {
+    justify-content: flex-start;
+    padding: 9px 10px;
+    gap: 10px;
+}
+
+.nav-item--active {
+    background: var(--fn-sidebar-active);
+    color: #ffffff;
+}
+
+.nav-item:not(.nav-item--active):hover {
+    background: rgba(255, 255, 255, 0.05);
+    color: #ffffff;
+}
+
+.nav-item__label {
+    font-size: 13px;
+    font-weight: 400;
+}
+
+.nav-item--active .nav-item__label {
+    font-weight: 600;
+}
+
+.nav-item--collapsed .nav-item__label {
+    display: none;
+}
+
+/* MudIcon inherits color via currentColor — no ::deep needed */

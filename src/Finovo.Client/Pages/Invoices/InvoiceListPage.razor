@@ -1,0 +1,124 @@
+@page "/invoices"
+@inject InvoiceService InvoiceService
+@inject ISnackbar Snackbar
+@inject NavigationManager Nav
+
+<PageTitle>Rechnungen – Finovo</PageTitle>
+
+<MudStack Row="true" AlignItems="AlignItems.Center" Class="mb-4">
+    <MudText Typo="Typo.h5">Rechnungen</MudText>
+    <MudSpacer />
+    <MudSelect T="string"
+               Value="statusFilter"
+               ValueChanged="OnStatusChanged"
+               Label="Status"
+               Variant="Variant.Outlined"
+               Clearable="true"
+               Style="min-width:160px">
+        <MudSelectItem Value="@("Draft")">Entwurf</MudSelectItem>
+        <MudSelectItem Value="@("Sent")">Versendet</MudSelectItem>
+        <MudSelectItem Value="@("Paid")">Bezahlt</MudSelectItem>
+        <MudSelectItem Value="@("Cancelled")">Storniert</MudSelectItem>
+    </MudSelect>
+</MudStack>
+
+@if (isLoading)
+{
+    <MudProgressCircular Indeterminate="true" />
+}
+else if (invoices.Count == 0)
+{
+    <MudText Color="Color.Secondary">Keine Rechnungen gefunden.</MudText>
+}
+else
+{
+    <MudTable T="InvoiceSummaryModel" Items="invoices" Hover="true" Dense="false" Elevation="1"
+              OnRowClick="@(args => Nav.NavigateTo("/invoices/" + args.Item.Id))">
+        <HeaderContent>
+            <MudTh>Rechnungsnr.</MudTh>
+            <MudTh>Kunde</MudTh>
+            <MudTh>Projekt</MudTh>
+            <MudTh>Ausstellungsdatum</MudTh>
+            <MudTh>Fällig</MudTh>
+            <MudTh>Status</MudTh>
+            <MudTh Style="text-align:right">Brutto</MudTh>
+        </HeaderContent>
+        <RowTemplate>
+            <MudTd DataLabel="Rechnungsnr.">
+                <b>@context.InvoiceNumber</b>
+            </MudTd>
+            <MudTd DataLabel="Kunde">@context.CustomerName</MudTd>
+            <MudTd DataLabel="Projekt">@context.ProjectName</MudTd>
+            <MudTd DataLabel="Ausstellungsdatum">@context.IssueDate.ToString("dd.MM.yyyy")</MudTd>
+            <MudTd DataLabel="Fällig">
+                <MudText Color="@DueDateColor(context)">@context.DueDate.ToString("dd.MM.yyyy")</MudText>
+            </MudTd>
+            <MudTd DataLabel="Status">
+                <MudChip T="string"
+                         Color="@StatusColor(context.Status)"
+                         Size="Size.Small"
+                         Variant="Variant.Filled">
+                    @StatusLabel(context.Status)
+                </MudChip>
+            </MudTd>
+            <MudTd DataLabel="Brutto" Style="text-align:right">
+                <b>@context.TotalGross.ToString("F2") @context.Currency</b>
+            </MudTd>
+        </RowTemplate>
+    </MudTable>
+}
+
+@code {
+    private List<InvoiceSummaryModel> invoices = [];
+    private bool isLoading = true;
+    private string? statusFilter;
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        isLoading = true;
+        try
+        {
+            invoices = await InvoiceService.GetAllAsync(status: statusFilter);
+        }
+        catch
+        {
+            Snackbar.Add("Fehler beim Laden der Rechnungen.", Severity.Error);
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task OnStatusChanged(string? value)
+    {
+        statusFilter = value;
+        await LoadAsync();
+    }
+
+    private static Color StatusColor(string status) => status switch
+    {
+        "Draft"     => Color.Default,
+        "Sent"      => Color.Info,
+        "Paid"      => Color.Success,
+        "Cancelled" => Color.Error,
+        _           => Color.Default
+    };
+
+    private static string StatusLabel(string status) => status switch
+    {
+        "Draft"     => "Entwurf",
+        "Sent"      => "Versendet",
+        "Paid"      => "Bezahlt",
+        "Cancelled" => "Storniert",
+        _           => status
+    };
+
+    private static Color DueDateColor(InvoiceSummaryModel inv)
+    {
+        if (inv.Status is "Paid" or "Cancelled") return Color.Default;
+        return inv.DueDate < DateTime.Today ? Color.Error : Color.Default;
+    }
+}

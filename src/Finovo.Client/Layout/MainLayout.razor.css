@@ -1,0 +1,223 @@
+/* ── App Shell ── */
+.shell {
+    display: flex;
+    height: 100vh;
+    overflow: hidden;
+}
+
+.main-area {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    min-width: 0;
+}
+
+.main-content {
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+/* ── Sidebar ── */
+.sidebar {
+    background: var(--fn-sidebar-bg);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    transition: width 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+    flex-shrink: 0;
+}
+
+.sidebar--collapsed { width: 64px; }
+.sidebar--expanded  { width: 200px; }
+
+/* Logo row */
+.sidebar__logo-row {
+    height: 56px;
+    display: flex;
+    align-items: center;
+    padding: 0 17px;
+    gap: 10px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+    flex-shrink: 0;
+    overflow: hidden;
+}
+
+.sidebar--expanded .sidebar__logo-row {
+    padding: 0 12px;
+}
+
+.sidebar__logo-placeholder {
+    width: 30px;
+    height: 30px;
+    border-radius: var(--fn-radius-logo);
+    background: linear-gradient(135deg, #2d3d6b 0%, #3b5bdb 100%);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    overflow: hidden;
+}
+
+.sidebar__logo-placeholder-letter {
+    font-family: var(--fn-font-display);
+    font-size: 12px;
+    font-weight: 800;
+    color: #ffffff;
+}
+
+.sidebar__app-name {
+    overflow: hidden;
+    opacity: 0;
+    transition: opacity 0.15s;
+    white-space: nowrap;
+    width: 0;
+}
+
+.sidebar--expanded .sidebar__app-name {
+    opacity: 1;
+    width: auto;
+    flex: 1;
+}
+
+.sidebar__app-name-primary {
+    font-family: var(--fn-font-display);
+    font-size: 14px;
+    font-weight: 700;
+    color: #ffffff;
+    letter-spacing: -0.3px;
+    line-height: 1.2;
+    display: block;
+}
+
+.sidebar__app-name-sub {
+    font-size: 9px;
+    color: rgba(143, 160, 196, 0.8);
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    display: block;
+}
+
+/* Nav area */
+.sidebar__nav {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 8px;
+}
+
+/* Toggle button — inside nav, always reachable */
+.sidebar__toggle {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    height: 36px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--fn-sidebar-text);
+    border-radius: 8px;
+    padding: 0 10px;
+    margin-bottom: 6px;
+    transition: background 0.15s;
+    box-sizing: border-box;
+}
+
+.sidebar--collapsed .sidebar__toggle {
+    justify-content: center;
+    padding: 0;
+}
+
+.sidebar--expanded .sidebar__toggle {
+    justify-content: flex-start;
+}
+
+.sidebar__toggle:hover { background: rgba(255, 255, 255, 0.06); }
+
+.sidebar__toggle-label {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--fn-sidebar-text);
+    white-space: nowrap;
+}
+
+.sidebar--collapsed .sidebar__toggle-label {
+    display: none;
+}
+
+/* User row */
+.sidebar__user-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px;
+    border-top: 1px solid rgba(255, 255, 255, 0.07);
+    flex-shrink: 0;
+    overflow: hidden;
+}
+
+.sidebar__user-info {
+    overflow: hidden;
+    white-space: nowrap;
+    min-width: 0;
+}
+
+.sidebar__user-name {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--fn-sidebar-text-on);
+    display: block;
+}
+
+.sidebar__user-role {
+    font-size: 10px;
+    color: var(--fn-sidebar-text);
+    display: block;
+}
+
+/* ── Top bar ── */
+.topbar {
+    height: 52px;
+    background: var(--fn-surface);
+    border-bottom: 1px solid var(--fn-border);
+    display: flex;
+    align-items: center;
+    padding: 0 20px;
+    gap: 12px;
+    flex-shrink: 0;
+}
+
+.topbar__title {
+    font-family: var(--fn-font-display);
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--fn-text);
+    flex: 1;
+}
+
+.topbar__search {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--fn-bg);
+    border: 1px solid var(--fn-border);
+    border-radius: var(--fn-radius-input);
+    padding: 6px 12px;
+    font-size: 12px;
+    color: var(--fn-text-sub);
+    cursor: pointer;
+}
+
+.topbar__search-kbd {
+    font-family: var(--fn-font-mono);
+    font-size: 10px;
+    background: var(--fn-border);
+    border-radius: 3px;
+    padding: 1px 5px;
+    margin-left: 6px;
+}

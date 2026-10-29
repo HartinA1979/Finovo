@@ -1,0 +1,31 @@
+<span class="fn-status-badge @GetCssClass(Status)">@GetLabel(Status)</span>
+
+@code {
+    [Parameter] public string Status { get; set; } = "";
+
+    private static string GetCssClass(string status) => status switch
+    {
+        "Draft"      => "fn-status-badge--draft",
+        "Open"       => "fn-status-badge--open",
+        "InProgress" => "fn-status-badge--inprogress",
+        "OnHold"     => "fn-status-badge--onhold",
+        "Completed"  => "fn-status-badge--completed",
+        "Cancelled"  => "fn-status-badge--cancelled",
+        "Invoiced"   => "fn-status-badge--invoiced",
+        "Archived"   => "fn-status-badge--draft",
+        _            => "fn-status-badge--draft",
+    };
+
+    private static string GetLabel(string status) => status switch
+    {
+        "Draft"      => "Entwurf",
+        "Open"       => "Offen",
+        "InProgress" => "In Arbeit",
+        "OnHold"     => "Pausiert",
+        "Completed"  => "Abgeschlossen",
+        "Cancelled"  => "Storniert",
+        "Invoiced"   => "Verrechnet",
+        "Archived"   => "Archiviert",
+        _            => status,
+    };
+}

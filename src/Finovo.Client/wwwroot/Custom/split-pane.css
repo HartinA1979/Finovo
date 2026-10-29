@@ -1,0 +1,62 @@
+.fn-split {
+  display: flex;
+  height: 100%;
+  overflow: hidden;
+}
+
+.fn-split__list {
+  width: 320px;
+  flex-shrink: 0;
+  border-right: 1px solid var(--fn-border);
+  background: var(--fn-surface);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.fn-split__list-body {
+  flex: 1;
+  overflow-y: auto;
+}
+
+.fn-split__detail {
+  flex: 1;
+  overflow: auto;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.fn-split__panel {
+  width: 280px;
+  flex-shrink: 0;
+  border-left: 1px solid var(--fn-border);
+  background: var(--fn-surface);
+  overflow: auto;
+  padding: 20px;
+  transition: width 0.2s ease;
+}
+
+.fn-split__panel--hidden {
+  width: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
+.fn-list-row {
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--fn-border);
+  cursor: pointer;
+  border-left: 3px solid transparent;
+  transition: background 0.1s, border-color 0.1s;
+}
+
+.fn-list-row:hover {
+  background: rgba(0, 0, 0, 0.02);
+}
+
+.fn-list-row--selected {
+  background: rgba(59, 91, 219, 0.059);
+  border-left-color: var(--fn-primary);
+}

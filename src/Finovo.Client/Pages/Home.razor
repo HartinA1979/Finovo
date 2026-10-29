@@ -1,0 +1,155 @@
+@page "/"
+@inject CustomerService CustomerService
+@inject ProjectService ProjectService
+
+<PageTitle>Dashboard – Finovo</PageTitle>
+
+<div class="dashboard">
+    @if (_isLoading)
+    {
+        <div class="dashboard__loading">
+            <MudProgressCircular Indeterminate="true" Color="Color.Primary" />
+        </div>
+    }
+    else
+    {
+        <div class="dashboard__kpi-grid">
+            <div class="fn-kpi-card">
+                <div class="fn-kpi-card__label">Kunden gesamt</div>
+                <div class="fn-kpi-card__value">@_totalCustomers</div>
+                <div class="fn-kpi-card__sub">@_activeCustomers aktiv</div>
+                <div class="fn-kpi-card__bar">
+                    <div class="fn-kpi-card__bar-fill" style="background:var(--fn-primary);width:@KpiPct(_activeCustomers,_totalCustomers)%"></div>
+                </div>
+            </div>
+            <div class="fn-kpi-card">
+                <div class="fn-kpi-card__label">Projekte gesamt</div>
+                <div class="fn-kpi-card__value">@_totalProjects</div>
+                <div class="fn-kpi-card__sub">@_openProjects offen</div>
+                <div class="fn-kpi-card__bar">
+                    <div class="fn-kpi-card__bar-fill" style="background:var(--fn-accent);width:@KpiPct(_openProjects,_totalProjects)%"></div>
+                </div>
+            </div>
+            <div class="fn-kpi-card">
+                <div class="fn-kpi-card__label">Leistungspositionen</div>
+                <div class="fn-kpi-card__value">@_totalItems</div>
+                <div class="fn-kpi-card__sub">Ø @(_totalProjects > 0 ? _totalItems / _totalProjects : 0) pro Projekt</div>
+                <div class="fn-kpi-card__bar">
+                    <div class="fn-kpi-card__bar-fill" style="background:#7950f2;width:60%"></div>
+                </div>
+            </div>
+            <div class="fn-kpi-card">
+                <div class="fn-kpi-card__label">Gesamtbrutto</div>
+                <div class="fn-kpi-card__value fn-kpi-card__value--lg">€ @_totalGross.ToString("N0")</div>
+                <div class="fn-kpi-card__sub">Alle Projekte</div>
+                <div class="fn-kpi-card__bar">
+                    <div class="fn-kpi-card__bar-fill" style="background:var(--fn-warning);width:70%"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="dashboard__content-grid">
+            <div class="fn-card">
+                <div class="fn-card-header">
+                    <span class="fn-card-header__title">Letzte Kunden</span>
+                    <a href="customers" class="fn-card-header__action">Alle anzeigen →</a>
+                </div>
+                @if (_recentCustomers.Count == 0)
+                {
+                    <div class="dashboard__empty">Keine Kunden vorhanden.</div>
+                }
+                @foreach (var c in _recentCustomers)
+                {
+                    <div class="fn-list-row">
+                        <div class="dashboard__list-row-inner">
+                            <div class="fn-avatar fn-avatar--sm">@Initials(c.Name)</div>
+                            <div class="dashboard__list-row-text">
+                                <div class="dashboard__list-row-name">@c.Name</div>
+                                @if (!string.IsNullOrEmpty(c.CompanyName))
+                                {
+                                    <div class="dashboard__list-row-sub">@c.CompanyName</div>
+                                }
+                            </div>
+                            <span class="fn-chip @(c.IsActive ? "fn-chip--active" : "fn-chip--inactive")">
+                                @(c.IsActive ? "Aktiv" : "Inaktiv")
+                            </span>
+                        </div>
+                    </div>
+                }
+            </div>
+
+            <div class="fn-card">
+                <div class="fn-card-header">
+                    <span class="fn-card-header__title">Letzte Projekte</span>
+                    <a href="projects" class="fn-card-header__action">Alle anzeigen →</a>
+                </div>
+                @if (_recentProjects.Count == 0)
+                {
+                    <div class="dashboard__empty">Keine Projekte vorhanden.</div>
+                }
+                @foreach (var p in _recentProjects)
+                {
+                    <div class="fn-list-row">
+                        <div class="dashboard__list-row-inner">
+                            <div class="dashboard__list-row-text">
+                                <div class="dashboard__list-row-name">@p.Name</div>
+                                <div class="dashboard__list-row-sub">@p.CustomerName</div>
+                            </div>
+                            <ProjectStatusChip Status="@p.Status" />
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    private bool _isLoading = true;
+    private List<CustomerModel> _allCustomers = [];
+    private List<ProjectSummaryModel> _allProjects = [];
+
+    private int _totalCustomers => _allCustomers.Count;
+    private int _activeCustomers => _allCustomers.Count(c => c.IsActive);
+    private int _totalProjects => _allProjects.Count;
+    private int _openProjects => _allProjects.Count(p => p.Status is "Open" or "Draft");
+    private int _totalItems => _allProjects.Sum(p => p.ServiceItemCount);
+    private decimal _totalGross => _allProjects.Sum(p => p.TotalGross);
+    private List<CustomerModel> _recentCustomers => _allCustomers.Take(5).ToList();
+    private List<ProjectSummaryModel> _recentProjects => _allProjects.Take(5).ToList();
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            await Task.WhenAll(LoadCustomersAsync(), LoadProjectsAsync());
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private async Task LoadCustomersAsync()
+    {
+        try { _allCustomers = await CustomerService.GetAllAsync(); }
+        catch { }
+    }
+
+    private async Task LoadProjectsAsync()
+    {
+        try { _allProjects = await ProjectService.GetAllAsync(); }
+        catch { }
+    }
+
+    private static int KpiPct(int part, int total) =>
+        total > 0 ? Math.Clamp((int)((double)part / total * 100), 0, 100) : 0;
+
+    private static string Initials(string name)
+    {
+        var parts = name.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        return parts.Length >= 2
+            ? $"{char.ToUpper(parts[0][0])}{char.ToUpper(parts[1][0])}"
+            : name.Length >= 2 ? name[..2].ToUpper() : name.ToUpper();
+    }
+}

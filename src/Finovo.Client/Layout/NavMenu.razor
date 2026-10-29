@@ -1,0 +1,67 @@
+@implements IDisposable
+@inject NavigationManager Nav
+
+<div class="nav-list">
+    @if (Expanded)
+    {
+        <div class="nav-section-label">Verwaltung</div>
+    }
+
+    <a href="" title="@(!Expanded ? "Dashboard" : null)" class="@NavClass("", exact: true)">
+        <MudIcon Icon="@Icons.Material.Filled.Dashboard" Size="Size.Small" />
+        <span class="nav-item__label">Dashboard</span>
+    </a>
+
+    <a href="customers" title="@(!Expanded ? "Kunden" : null)" class="@NavClass("customers")">
+        <MudIcon Icon="@Icons.Material.Filled.People" Size="Size.Small" />
+        <span class="nav-item__label">Kunden</span>
+    </a>
+
+    <a href="projects" title="@(!Expanded ? "Projekte" : null)" class="@NavClass("projects")">
+        <MudIcon Icon="@Icons.Material.Filled.Work" Size="Size.Small" />
+        <span class="nav-item__label">Projekte</span>
+    </a>
+
+    <a href="invoices" title="@(!Expanded ? "Rechnungen" : null)" class="@NavClass("invoices")">
+        <MudIcon Icon="@Icons.Material.Filled.Receipt" Size="Size.Small" />
+        <span class="nav-item__label">Rechnungen</span>
+    </a>
+
+    <div class="nav-divider"></div>
+
+    @if (Expanded)
+    {
+        <div class="nav-section-label">System</div>
+    }
+
+    <a href="settings" title="@(!Expanded ? "Einstellungen" : null)" class="@NavClass("settings")">
+        <MudIcon Icon="@Icons.Material.Filled.Settings" Size="Size.Small" />
+        <span class="nav-item__label">Einstellungen</span>
+    </a>
+</div>
+
+@code {
+    [Parameter] public bool Expanded { get; set; }
+
+    protected override void OnInitialized() => Nav.LocationChanged += OnLocationChanged;
+
+    private void OnLocationChanged(object? sender, LocationChangedEventArgs e) => StateHasChanged();
+
+    public void Dispose() => Nav.LocationChanged -= OnLocationChanged;
+
+    private string NavClass(string href, bool exact = false)
+    {
+        var active = IsActive(href, exact);
+        return string.Join(" ",
+            "nav-item",
+            Expanded ? "nav-item--expanded" : "nav-item--collapsed",
+            active ? "nav-item--active" : "");
+    }
+
+    private bool IsActive(string href, bool exact)
+    {
+        var path = Nav.ToBaseRelativePath(Nav.Uri).Trim('/');
+        if (exact || string.IsNullOrEmpty(href)) return path == href;
+        return path == href || path.StartsWith(href + "/", StringComparison.OrdinalIgnoreCase);
+    }
+}

@@ -1,0 +1,149 @@
+@page "/projects/new"
+@page "/projects/{Id:guid}/edit"
+@inject ProjectService ProjectService
+@inject CustomerService CustomerService
+@inject ISnackbar Snackbar
+@inject NavigationManager Nav
+
+<PageTitle>@(IsEditMode ? "Projekt bearbeiten" : "Neues Projekt") – Finovo</PageTitle>
+
+<MudText Typo="Typo.h5" Class="mb-4">@(IsEditMode ? "Projekt bearbeiten" : "Neues Projekt")</MudText>
+
+@if (isLoading)
+{
+    <MudProgressCircular Indeterminate="true" />
+}
+else
+{
+    <MudPaper Class="pa-6" Elevation="1" MaxWidth="600">
+        <MudForm @ref="form" @bind-IsValid="isValid">
+
+            @if (!IsEditMode)
+            {
+                <MudSelect T="Guid"
+                           @bind-Value="customerId"
+                           Label="Kunde *"
+                           Variant="Variant.Outlined"
+                           Required="true"
+                           RequiredError="Bitte einen Kunden wählen."
+                           Class="mb-3">
+                    @foreach (var c in customers)
+                    {
+                        <MudSelectItem Value="@c.Id">@c.Name @(c.CompanyName is not null ? "(" + c.CompanyName + ")" : "")</MudSelectItem>
+                    }
+                </MudSelect>
+            }
+
+            <MudTextField @bind-Value="name"
+                          Label="Projektname *"
+                          Variant="Variant.Outlined"
+                          Required="true"
+                          RequiredError="Projektname ist erforderlich."
+                          MaxLength="300"
+                          Class="mb-3" />
+
+            <MudTextField @bind-Value="description"
+                          Label="Beschreibung"
+                          Variant="Variant.Outlined"
+                          Lines="4"
+                          MaxLength="2000"
+                          Class="mb-4" />
+
+            <MudStack Row="true" Spacing="2" Justify="Justify.FlexEnd">
+                <MudButton Variant="Variant.Text" OnClick="Cancel">Abbrechen</MudButton>
+                <MudButton Variant="Variant.Filled"
+                           Color="Color.Primary"
+                           StartIcon="@Icons.Material.Filled.Save"
+                           OnClick="SaveAsync"
+                           Disabled="isSaving">
+                    @(isSaving ? "Wird gespeichert..." : "Speichern")
+                </MudButton>
+            </MudStack>
+        </MudForm>
+    </MudPaper>
+}
+
+@code {
+    [Parameter] public Guid? Id { get; set; }
+    [SupplyParameterFromQuery] public Guid? CustomerId { get; set; }
+
+    private bool IsEditMode => Id.HasValue;
+
+    private MudForm form = null!;
+    private bool isValid;
+    private bool isLoading = true;
+    private bool isSaving;
+
+    private List<CustomerModel> customers = [];
+    private Guid customerId;
+    private string name = string.Empty;
+    private string? description;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            if (!IsEditMode)
+            {
+                customers = await CustomerService.GetAllAsync(isActive: true);
+                if (CustomerId.HasValue)
+                    customerId = CustomerId.Value;
+                else if (customers.Count > 0)
+                    customerId = customers[0].Id;
+            }
+            else
+            {
+                var project = await ProjectService.GetByIdAsync(Id!.Value);
+                if (project is null)
+                {
+                    Snackbar.Add("Projekt nicht gefunden.", Severity.Error);
+                    Nav.NavigateTo("/projects");
+                    return;
+                }
+                name = project.Name;
+                description = project.Description;
+            }
+        }
+        catch
+        {
+            Snackbar.Add("Fehler beim Laden der Daten.", Severity.Error);
+            Nav.NavigateTo("/projects");
+            return;
+        }
+        isLoading = false;
+    }
+
+    private async Task SaveAsync()
+    {
+        await form.Validate();
+        if (!isValid) return;
+
+        isSaving = true;
+        try
+        {
+            if (IsEditMode)
+            {
+                await ProjectService.UpdateAsync(Id!.Value, new UpdateProjectRequest(name, description));
+                Snackbar.Add("Projekt aktualisiert.", Severity.Success);
+            }
+            else
+            {
+                var newId = await ProjectService.CreateAsync(new CreateProjectRequest(customerId, name, description));
+                Snackbar.Add("Projekt erstellt.", Severity.Success);
+                Nav.NavigateTo("/projects/" + newId);
+                return;
+            }
+            Nav.NavigateTo("/projects/" + Id);
+        }
+        catch
+        {
+            Snackbar.Add("Fehler beim Speichern.", Severity.Error);
+        }
+        finally
+        {
+            isSaving = false;
+        }
+    }
+
+    private void Cancel() => Nav.NavigateTo(IsEditMode ? "/projects/" + Id : "/projects");
+}

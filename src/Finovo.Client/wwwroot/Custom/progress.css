@@ -1,0 +1,22 @@
+.fn-progress {
+  background: var(--fn-bg);
+  border-radius: 5px;
+  height: 6px;
+  overflow: hidden;
+}
+
+.fn-progress--thin {
+  height: 4px;
+  border-radius: 3px;
+}
+
+.fn-progress__bar {
+  height: 100%;
+  border-radius: inherit;
+  background: var(--fn-primary);
+  transition: width 0.4s ease;
+}
+
+.fn-progress__bar--danger {
+  background: #e64980;
+}

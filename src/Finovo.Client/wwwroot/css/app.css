@@ -1,0 +1,138 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&family=Inter:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap');
+
+/* ── Finovo Design Tokens ── */
+:root {
+  /* Backgrounds */
+  --fn-bg:              #f7f8fc;
+  --fn-surface:         #ffffff;
+  --fn-sidebar-bg:      #1c2540;
+  --fn-sidebar-active:  #2d3d6b;
+
+  /* Text */
+  --fn-text:            #1c2033;
+  --fn-text-sub:        #6c7491;
+  --fn-sidebar-text:    #6b84c4;
+  --fn-sidebar-text-on: #ffffff;
+
+  /* Brand */
+  --fn-primary:         #3b5bdb;
+  --fn-primary-bg:      #eef1fd;
+  --fn-accent:          #12b886;
+  --fn-accent-bg:       #e6f9f0;
+  --fn-danger:          #e05252;
+  --fn-warning:         #f59f00;
+
+  /* Structure */
+  --fn-border:          #e8eaf0;
+  --fn-shadow:          0 1px 4px rgba(60, 70, 120, 0.07);
+  --fn-shadow-hover:    0 4px 12px rgba(60, 70, 120, 0.12);
+
+  /* Radii */
+  --fn-radius-card:     12px;
+  --fn-radius-btn:      8px;
+  --fn-radius-chip:     10px;
+  --fn-radius-badge:    4px;
+  --fn-radius-input:    8px;
+  --fn-radius-avatar:   8px;
+  --fn-radius-logo:     8px;
+
+  /* Spacing */
+  --fn-page-pad:        20px;
+  --fn-card-pad:        16px 18px;
+  --fn-gap:             12px;
+
+  /* Typography */
+  --fn-font-sans:       'Inter', sans-serif;
+  --fn-font-display:    'DM Sans', sans-serif;
+  --fn-font-mono:       'DM Mono', monospace;
+}
+
+html, body {
+  font-family: var(--fn-font-sans);
+  background: var(--fn-bg);
+  color: var(--fn-text);
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+}
+
+h1:focus {
+  outline: none;
+}
+
+.valid.modified:not([type=checkbox]) {
+  outline: 1px solid #26b050;
+}
+
+.invalid {
+  outline: 1px solid red;
+}
+
+.validation-message {
+  color: red;
+}
+
+#blazor-error-ui {
+  color-scheme: light only;
+  background: lightyellow;
+  bottom: 0;
+  box-shadow: 0 -1px 2px rgba(0, 0, 0, 0.2);
+  box-sizing: border-box;
+  display: none;
+  left: 0;
+  padding: 0.6rem 1.25rem 0.7rem 1.25rem;
+  position: fixed;
+  width: 100%;
+  z-index: 1000;
+}
+
+#blazor-error-ui .dismiss {
+  cursor: pointer;
+  position: absolute;
+  right: 0.75rem;
+  top: 0.5rem;
+}
+
+.blazor-error-boundary {
+  background: url(data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNTYiIGhlaWdodD0iNDkiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgeG1sbnM6eGxpbmsiPjxkZWZzPjxjbGlwUGF0aCBpZD0iY2xpcDAiPjxyZWN0IHg9IjIzNSIgeT0iNTEiIHdpZHRoPSI1NiIgaGVpZ2h0PSI0OSIvPjwvY2xpcFBhdGg+PC9kZWZzPjxnIGNsaXAtcGF0aD0idXJsKCNjbGlwMCkiIHRyYW5zZm9ybT0idHJhbnNsYXRlKC0yMzUgLTUxKSI+PC9nPjwvc3ZnPg==) no-repeat 1rem/1.8rem, #b32121;
+  padding: 1rem 1rem 1rem 3.7rem;
+  color: white;
+}
+
+.blazor-error-boundary::after {
+  content: "An error has occurred."
+}
+
+.loading-progress {
+  position: absolute;
+  display: block;
+  width: 8rem;
+  height: 8rem;
+  inset: 20vh 0 auto 0;
+  margin: 0 auto;
+}
+
+.loading-progress circle {
+  fill: none;
+  stroke: #e0e0e0;
+  stroke-width: 0.6rem;
+  transform-origin: 50% 50%;
+  transform: rotate(-90deg);
+}
+
+.loading-progress circle:last-child {
+  stroke: var(--fn-primary);
+  stroke-dasharray: calc(3.141 * var(--blazor-load-percentage, 0%) * 0.8), 500%;
+  transition: stroke-dasharray 0.05s ease-in-out;
+}
+
+.loading-progress-text {
+  position: absolute;
+  text-align: center;
+  font-weight: bold;
+  inset: calc(20vh + 3.25rem) 0 auto 0.2rem;
+}
+
+.loading-progress-text:after {
+  content: var(--blazor-load-percentage-text, "Loading");
+}

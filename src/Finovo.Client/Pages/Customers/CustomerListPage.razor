@@ -1,0 +1,284 @@
+@page "/customers"
+@inject CustomerService CustomerService
+@inject ProjectService ProjectService
+@inject ISnackbar Snackbar
+@inject IDialogService DialogService
+@inject NavigationManager Nav
+
+<PageTitle>Kunden – Finovo</PageTitle>
+
+<div class="fn-split">
+    <!-- Left: list pane -->
+    <div class="fn-split__list">
+        <div class="customer-list__search">
+            <input class="customer-list__search-input"
+                   type="search"
+                   placeholder="Name oder Firma suchen…"
+                   value="@_nameFilter"
+                   @oninput="OnSearch" />
+        </div>
+        <div class="customer-list__actions">
+            <a href="/customers/new" class="fn-btn fn-btn--primary fn-btn--sm">
+                <MudIcon Icon="@Icons.Material.Filled.PersonAdd" Size="Size.Small" />
+                Neuer Kunde
+            </a>
+        </div>
+
+        <div class="fn-split__list-body">
+            @if (_isLoading)
+            {
+                <div class="customer-list__spinner">
+                    <MudProgressCircular Indeterminate="true" Size="Size.Small" Color="Color.Primary" />
+                </div>
+            }
+            else if (_filtered.Count == 0)
+            {
+                <div class="customer-list__empty">Keine Kunden gefunden.</div>
+            }
+            else
+            {
+                @foreach (var c in _filtered)
+                {
+                    <div class="fn-list-row @(_selected?.Id == c.Id ? "fn-list-row--selected" : "")"
+                         @onclick="@(() => SelectAsync(c))">
+                        <div class="customer-row__inner">
+                            <div class="fn-avatar fn-avatar--md @(_selected?.Id == c.Id ? "fn-avatar--selected" : "")">
+                                @Initials(c.Name)
+                            </div>
+                            <div class="customer-row__text">
+                                <div class="customer-row__name">@c.Name</div>
+                                @if (!string.IsNullOrEmpty(c.CompanyName))
+                                {
+                                    <div class="customer-row__sub">@c.CompanyName</div>
+                                }
+                            </div>
+                            <span class="fn-chip @(c.IsActive ? "fn-chip--active" : "fn-chip--inactive")">
+                                @(c.IsActive ? "Aktiv" : "Inaktiv")
+                            </span>
+                        </div>
+                    </div>
+                }
+            }
+        </div>
+    </div>
+
+    <!-- Right: detail pane -->
+    <div class="fn-split__detail">
+        @if (_selected is null)
+        {
+            <div class="customer-detail__placeholder">
+                <MudIcon Icon="@Icons.Material.Filled.People" Class="customer-detail__placeholder-icon" />
+                <div>Kunden auswählen</div>
+            </div>
+        }
+        else
+        {
+            <!-- Header -->
+            <div class="customer-detail__header">
+                <div class="customer-detail__header-left">
+                    <div class="fn-avatar fn-avatar--lg fn-avatar--selected">@Initials(_selected.Name)</div>
+                    <div>
+                        <div class="customer-detail__name">@_selected.Name</div>
+                        @if (!string.IsNullOrEmpty(_selected.CompanyName))
+                        {
+                            <div class="customer-detail__sub">@_selected.CompanyName</div>
+                        }
+                        <div class="customer-detail__status-row">
+                            <span class="fn-chip @(_selected.IsActive ? "fn-chip--active" : "fn-chip--inactive")">
+                                @(_selected.IsActive ? "Aktiv" : "Inaktiv")
+                            </span>
+                        </div>
+                    </div>
+                </div>
+                <div class="customer-detail__actions">
+                    <a href="@($"/customers/{_selected.Id}/edit")" class="fn-btn fn-btn--outlined">
+                        <MudIcon Icon="@Icons.Material.Filled.Edit" Size="Size.Small" />
+                        Bearbeiten
+                    </a>
+                    @if (_selected.IsActive)
+                    {
+                        <button class="fn-btn fn-btn--outlined" @onclick="@(() => ConfirmDeactivate(_selected))">
+                            <MudIcon Icon="@Icons.Material.Filled.PersonOff" Size="Size.Small" />
+                            Deaktivieren
+                        </button>
+                    }
+                </div>
+            </div>
+
+            <!-- Info grid -->
+            <div class="customer-detail__grid">
+                <div class="fn-card fn-card--padded">
+                    <div class="fn-section-title">Kontakt</div>
+                    @if (!string.IsNullOrEmpty(_selected.Email))
+                    {
+                        <div class="fn-data-row">
+                            <span class="fn-data-row__label">E-Mail</span>
+                            <a href="mailto:@_selected.Email" class="fn-data-row__value">@_selected.Email</a>
+                        </div>
+                    }
+                    @if (!string.IsNullOrEmpty(_selected.Phone))
+                    {
+                        <div class="fn-data-row">
+                            <span class="fn-data-row__label">Telefon</span>
+                            <span class="fn-data-row__value">@_selected.Phone</span>
+                        </div>
+                    }
+                    @if (_selected.Address is { } addr)
+                    {
+                        <div class="fn-data-row">
+                            <span class="fn-data-row__label">Straße</span>
+                            <span class="fn-data-row__value">@addr.Street</span>
+                        </div>
+                        <div class="fn-data-row">
+                            <span class="fn-data-row__label">Ort</span>
+                            <span class="fn-data-row__value">@addr.ZipCode @addr.City</span>
+                        </div>
+                        <div class="fn-data-row">
+                            <span class="fn-data-row__label">Land</span>
+                            <span class="fn-data-row__value">@addr.Country</span>
+                        </div>
+                    }
+                    @if (string.IsNullOrEmpty(_selected.Email) && string.IsNullOrEmpty(_selected.Phone) && _selected.Address is null)
+                    {
+                        <div class="customer-detail__no-data">Keine Kontaktdaten erfasst.</div>
+                    }
+                </div>
+
+                <div class="fn-card fn-card--padded">
+                    <div class="fn-section-title">Buchhaltung</div>
+                    @if (!string.IsNullOrEmpty(_selected.VatNumber))
+                    {
+                        <div class="fn-data-row">
+                            <span class="fn-data-row__label">UID-Nummer</span>
+                            <span class="fn-data-row__value fn-data-row__value--mono">@_selected.VatNumber</span>
+                        </div>
+                    }
+                    <div class="fn-data-row">
+                        <span class="fn-data-row__label">Angelegt</span>
+                        <span class="fn-data-row__value">@_selected.CreatedAt.ToString("dd.MM.yyyy")</span>
+                    </div>
+                    @if (_selected.UpdatedAt.HasValue)
+                    {
+                        <div class="fn-data-row">
+                            <span class="fn-data-row__label">Geändert</span>
+                            <span class="fn-data-row__value">@_selected.UpdatedAt.Value.ToString("dd.MM.yyyy")</span>
+                        </div>
+                    }
+                    @if (!string.IsNullOrEmpty(_selected.Notes))
+                    {
+                        <div class="fn-data-row">
+                            <span class="fn-data-row__label">Notizen</span>
+                            <span class="fn-data-row__value">@_selected.Notes</span>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <!-- Projects card -->
+            <div class="fn-card">
+                <div class="fn-card-header">
+                    <span class="fn-card-header__title">Projekte (@_customerProjects.Count)</span>
+                    <a href="projects" class="fn-card-header__action">Alle →</a>
+                </div>
+                @if (_projectsLoading)
+                {
+                    <div class="customer-detail__projects-spinner">
+                        <MudProgressCircular Indeterminate="true" Size="Size.Small" />
+                    </div>
+                }
+                else if (_customerProjects.Count == 0)
+                {
+                    <div class="customer-detail__no-data">Keine Projekte vorhanden.</div>
+                }
+                else
+                {
+                    @foreach (var p in _customerProjects)
+                    {
+                        <div class="fn-list-row">
+                            <div class="customer-project-row">
+                                <div class="customer-project-row__text">
+                                    <div class="customer-project-row__name">@p.Name</div>
+                                    <div class="customer-project-row__meta">
+                                        @p.ServiceItemCount Pos. · @p.TotalGross.ToString("F2") @p.Currency
+                                    </div>
+                                </div>
+                                <ProjectStatusChip Status="@p.Status" />
+                            </div>
+                        </div>
+                    }
+                }
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    private List<CustomerModel> _customers = [];
+    private CustomerModel? _selected;
+    private List<ProjectSummaryModel> _customerProjects = [];
+    private bool _isLoading = true;
+    private bool _projectsLoading = false;
+    private string? _nameFilter;
+
+    private List<CustomerModel> _filtered => string.IsNullOrWhiteSpace(_nameFilter)
+        ? _customers
+        : _customers.Where(c =>
+            c.Name.Contains(_nameFilter, StringComparison.OrdinalIgnoreCase) ||
+            (c.CompanyName?.Contains(_nameFilter, StringComparison.OrdinalIgnoreCase) ?? false))
+          .ToList();
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        _isLoading = true;
+        try { _customers = await CustomerService.GetAllAsync(); }
+        catch { Snackbar.Add("Fehler beim Laden der Kunden.", Severity.Error); }
+        finally { _isLoading = false; }
+    }
+
+    private void OnSearch(ChangeEventArgs e) => _nameFilter = e.Value?.ToString();
+
+    private async Task SelectAsync(CustomerModel customer)
+    {
+        _selected = customer;
+        _projectsLoading = true;
+        try { _customerProjects = await ProjectService.GetAllAsync(customerId: customer.Id); }
+        catch { _customerProjects = []; }
+        finally { _projectsLoading = false; }
+    }
+
+    private async Task ConfirmDeactivate(CustomerModel customer)
+    {
+        var parameters = new DialogParameters<ConfirmDialog>
+        {
+            { x => x.ContentText, $"Soll der Kunde \"{customer.Name}\" wirklich deaktiviert werden?" },
+            { x => x.ButtonText, "Deaktivieren" },
+            { x => x.Color, Color.Warning },
+        };
+        var dialog = await DialogService.ShowAsync<ConfirmDialog>("Kunde deaktivieren", parameters);
+        var result = await dialog.Result;
+        if (result is { Canceled: false })
+            await DeactivateAsync(customer.Id);
+    }
+
+    private async Task DeactivateAsync(Guid id)
+    {
+        try
+        {
+            await CustomerService.DeactivateAsync(id);
+            Snackbar.Add("Kunde wurde deaktiviert.", Severity.Success);
+            await LoadAsync();
+            _selected = _customers.FirstOrDefault(c => c.Id == id);
+        }
+        catch { Snackbar.Add("Fehler beim Deaktivieren.", Severity.Error); }
+    }
+
+    private static string Initials(string name)
+    {
+        var parts = name.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        return parts.Length >= 2
+            ? $"{char.ToUpper(parts[0][0])}{char.ToUpper(parts[1][0])}"
+            : name.Length >= 2 ? name[..2].ToUpper() : name.ToUpper();
+    }
+}

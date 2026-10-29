@@ -1,0 +1,56 @@
+.fn-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 16px;
+  border-radius: var(--fn-radius-btn);
+  font-family: var(--fn-font-sans);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  transition: opacity 0.15s, box-shadow 0.15s;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.fn-btn--primary {
+  background: var(--fn-primary);
+  color: #ffffff;
+}
+
+.fn-btn--primary:hover {
+  opacity: 0.9;
+  box-shadow: 0 2px 8px rgba(59, 91, 219, 0.3);
+}
+
+.fn-btn--outlined {
+  background: var(--fn-surface);
+  color: var(--fn-text);
+  border: 1px solid var(--fn-border);
+}
+
+.fn-btn--outlined:hover {
+  background: var(--fn-bg);
+}
+
+.fn-btn--icon {
+  padding: 5px;
+  width: 28px;
+  height: 28px;
+  justify-content: center;
+  font-size: 13px;
+  color: var(--fn-text-sub);
+  background: transparent;
+  border: 1px solid var(--fn-border);
+}
+
+.fn-btn--icon:hover {
+  background: var(--fn-bg);
+  color: var(--fn-text);
+}
+
+.fn-btn--icon-danger:hover {
+  color: var(--fn-danger);
+  border-color: var(--fn-danger);
+}

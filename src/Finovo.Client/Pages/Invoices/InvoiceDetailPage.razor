@@ -1,0 +1,351 @@
+@page "/invoices/{Id:guid}"
+@inject InvoiceService InvoiceService
+@inject ISnackbar Snackbar
+@inject IDialogService DialogService
+@inject NavigationManager Nav
+@inject IJSRuntime JS
+
+<PageTitle>@(invoice?.InvoiceNumber ?? "Rechnung") – Finovo</PageTitle>
+
+@if (isLoading)
+{
+    <MudProgressCircular Indeterminate="true" />
+}
+else if (invoice is null)
+{
+    <MudText Color="Color.Error">Rechnung nicht gefunden.</MudText>
+}
+else
+{
+    <!-- Header -->
+    <MudStack Row="true" AlignItems="AlignItems.Center" Class="mb-4" Spacing="2">
+        <MudIconButton Icon="@Icons.Material.Filled.ArrowBack"
+                       OnClick="@(() => Nav.NavigateTo("/invoices"))" />
+        <MudText Typo="Typo.h5">@invoice.InvoiceNumber</MudText>
+        <MudChip T="string"
+                 Color="@StatusColor(invoice.Status)"
+                 Size="Size.Small"
+                 Variant="Variant.Filled">
+            @StatusLabel(invoice.Status)
+        </MudChip>
+        <MudSpacer />
+
+        <!-- Status-Aktionen -->
+        @if (invoice.Status == "Draft")
+        {
+            <MudButton Variant="Variant.Outlined"
+                       Color="Color.Info"
+                       StartIcon="@Icons.Material.Filled.Send"
+                       OnClick="SendInvoice">
+                Versenden
+            </MudButton>
+        }
+        @if (invoice.Status == "Sent")
+        {
+            <MudButton Variant="Variant.Outlined"
+                       Color="Color.Success"
+                       StartIcon="@Icons.Material.Filled.CheckCircle"
+                       OnClick="PayInvoice">
+                Als bezahlt markieren
+            </MudButton>
+        }
+        @if (invoice.Status is "Draft" or "Sent")
+        {
+            <MudIconButton Icon="@Icons.Material.Filled.Cancel"
+                           Title="Stornieren"
+                           Color="Color.Error"
+                           OnClick="CancelInvoice" />
+        }
+
+        <!-- PDF -->
+        <MudIconButton Icon="@Icons.Material.Filled.PictureAsPdf"
+                       Title="PDF herunterladen"
+                       Color="Color.Primary"
+                       OnClick="DownloadPdf"
+                       Disabled="isPdfLoading" />
+    </MudStack>
+
+    <!-- Info-Karten -->
+    <MudGrid Spacing="3" Class="mb-4">
+        <MudItem xs="12" md="4">
+            <MudPaper Class="pa-4" Elevation="1">
+                <MudText Typo="Typo.subtitle2" Color="Color.Secondary" Class="mb-2">Rechnungsinfo</MudText>
+                <MudText><b>Kunde:</b> @invoice.CustomerName</MudText>
+                <MudText><b>Projekt:</b> @invoice.ProjectName</MudText>
+                <MudText><b>Ausgestellt:</b> @invoice.IssueDate.ToString("dd.MM.yyyy")</MudText>
+                <MudText Color="@(invoice.DueDate < DateTime.Today && invoice.Status is "Draft" or "Sent" ? Color.Error : Color.Default)">
+                    <b>Fällig:</b> @invoice.DueDate.ToString("dd.MM.yyyy")
+                </MudText>
+                @if (!string.IsNullOrWhiteSpace(invoice.Notes))
+                {
+                    <MudText Typo="Typo.body2" Class="mt-2" Style="white-space:pre-wrap">@invoice.Notes</MudText>
+                }
+            </MudPaper>
+        </MudItem>
+        <MudItem xs="12" md="4">
+            <MudPaper Class="pa-4" Elevation="1">
+                <MudText Typo="Typo.subtitle2" Color="Color.Secondary" Class="mb-2">Summen</MudText>
+                <MudSimpleTable Dense="true" Elevation="0">
+                    <tbody>
+                        <tr>
+                            <td>Netto</td>
+                            <td align="right">@invoice.TotalNet.ToString("F2") @invoice.Currency</td>
+                        </tr>
+                        <tr>
+                            <td>MwSt.</td>
+                            <td align="right">@invoice.TaxAmount.ToString("F2") @invoice.Currency</td>
+                        </tr>
+                        <tr style="font-weight:bold">
+                            <td>Brutto</td>
+                            <td align="right">@invoice.TotalGross.ToString("F2") @invoice.Currency</td>
+                        </tr>
+                    </tbody>
+                </MudSimpleTable>
+            </MudPaper>
+        </MudItem>
+    </MudGrid>
+
+    <!-- Positionen -->
+    <MudPaper Class="pa-4" Elevation="1">
+        <MudStack Row="true" AlignItems="AlignItems.Center" Class="mb-3">
+            <MudText Typo="Typo.subtitle1"><b>Positionen</b></MudText>
+            <MudSpacer />
+            @if (invoice.Status == "Draft")
+            {
+                <MudButton Variant="Variant.Outlined"
+                           Color="Color.Primary"
+                           StartIcon="@Icons.Material.Filled.Add"
+                           Size="Size.Small"
+                           OnClick="OpenAddItemDialog">
+                    Position hinzufügen
+                </MudButton>
+            }
+        </MudStack>
+
+        @if (invoice.Items.Count == 0)
+        {
+            <MudText Color="Color.Secondary">Keine Positionen.</MudText>
+        }
+        else
+        {
+            <MudTable Items="invoice.Items" Dense="true" Hover="true" Elevation="0">
+                <HeaderContent>
+                    <MudTh>Beschreibung</MudTh>
+                    <MudTh Style="text-align:right">Stunden</MudTh>
+                    <MudTh Style="text-align:right">Satz</MudTh>
+                    <MudTh Style="text-align:right">MwSt.</MudTh>
+                    <MudTh Style="text-align:right">Netto</MudTh>
+                    <MudTh Style="text-align:right">Brutto</MudTh>
+                    @if (invoice.Status == "Draft")
+                    {
+                        <MudTh Style="width:80px"></MudTh>
+                    }
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd DataLabel="Beschreibung">@context.Description</MudTd>
+                    <MudTd DataLabel="Stunden" Style="text-align:right">@context.Hours.ToString("F2")</MudTd>
+                    <MudTd DataLabel="Satz" Style="text-align:right">@context.HourlyRateAmount.ToString("F2") @context.Currency</MudTd>
+                    <MudTd DataLabel="MwSt." Style="text-align:right">@context.TaxRatePercent %</MudTd>
+                    <MudTd DataLabel="Netto" Style="text-align:right">@context.TotalNet.ToString("F2")</MudTd>
+                    <MudTd DataLabel="Brutto" Style="text-align:right"><b>@context.TotalGross.ToString("F2")</b></MudTd>
+                    @if (invoice.Status == "Draft")
+                    {
+                        <MudTd>
+                            <MudIconButton Icon="@Icons.Material.Filled.Edit"
+                                           Size="Size.Small"
+                                           OnClick="@(() => OpenEditItemDialog(context))" />
+                            <MudIconButton Icon="@Icons.Material.Filled.Delete"
+                                           Size="Size.Small"
+                                           Color="Color.Error"
+                                           OnClick="@(() => RemoveItem(context.Id))" />
+                        </MudTd>
+                    }
+                </RowTemplate>
+            </MudTable>
+        }
+    </MudPaper>
+}
+
+@code {
+    [Parameter] public Guid Id { get; set; }
+
+    private InvoiceModel? invoice;
+    private bool isLoading = true;
+    private bool isPdfLoading;
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        isLoading = true;
+        try { invoice = await InvoiceService.GetByIdAsync(Id); }
+        catch { Snackbar.Add("Fehler beim Laden der Rechnung.", Severity.Error); }
+        finally { isLoading = false; }
+    }
+
+    // ── Status-Aktionen ───────────────────────────────────────────────────────
+
+    private async Task SendInvoice()
+    {
+        try
+        {
+            await InvoiceService.SendAsync(Id);
+            Snackbar.Add("Rechnung als versendet markiert.", Severity.Success);
+            await LoadAsync();
+        }
+        catch (Exception ex) { Snackbar.Add("Fehler: " + ex.Message, Severity.Error); }
+    }
+
+    private async Task PayInvoice()
+    {
+        try
+        {
+            await InvoiceService.PayAsync(Id);
+            Snackbar.Add("Rechnung als bezahlt markiert.", Severity.Success);
+            await LoadAsync();
+        }
+        catch (Exception ex) { Snackbar.Add("Fehler: " + ex.Message, Severity.Error); }
+    }
+
+    private async Task CancelInvoice()
+    {
+        var parameters = new DialogParameters<ConfirmDialog>
+        {
+            { x => x.ContentText, "Soll diese Rechnung wirklich storniert werden?" },
+            { x => x.ButtonText, "Stornieren" },
+            { x => x.Color, Color.Error },
+        };
+        var dialog = await DialogService.ShowAsync<ConfirmDialog>("Rechnung stornieren", parameters);
+        var result = await dialog.Result;
+        if (result is { Canceled: false })
+        {
+            try
+            {
+                await InvoiceService.CancelAsync(Id);
+                Snackbar.Add("Rechnung storniert.", Severity.Success);
+                await LoadAsync();
+            }
+            catch (Exception ex) { Snackbar.Add("Fehler: " + ex.Message, Severity.Error); }
+        }
+    }
+
+    // ── PDF ───────────────────────────────────────────────────────────────────
+
+    private async Task DownloadPdf()
+    {
+        isPdfLoading = true;
+        try
+        {
+            var bytes = await InvoiceService.GetPdfAsync(Id);
+            var base64 = Convert.ToBase64String(bytes);
+            var fileName = $"Rechnung_{invoice?.InvoiceNumber ?? Id.ToString()}.pdf";
+            await JS.InvokeVoidAsync("downloadFileFromBase64", base64, fileName, "application/pdf");
+        }
+        catch (Exception ex) { Snackbar.Add("PDF-Fehler: " + ex.Message, Severity.Error); }
+        finally { isPdfLoading = false; }
+    }
+
+    // ── Positionen ────────────────────────────────────────────────────────────
+
+    private async Task OpenAddItemDialog()
+    {
+        var model = new ServiceItemDialog.ServiceItemFormModel();
+        var parameters = new DialogParameters<ServiceItemDialog>
+        {
+            { x => x.Model, model },
+            { x => x.IsEdit, false },
+        };
+        var dialog = await DialogService.ShowAsync<ServiceItemDialog>("Position hinzufügen", parameters);
+        var result = await dialog.Result;
+        if (result is { Canceled: false, Data: ServiceItemDialog.ServiceItemFormModel filled })
+        {
+            try
+            {
+                await InvoiceService.AddItemAsync(Id, new InvoiceItemRequest(
+                    filled.Description,
+                    filled.Hours,
+                    filled.HourlyRateAmount,
+                    "EUR",
+                    filled.TaxRatePercent));
+                Snackbar.Add("Position hinzugefügt.", Severity.Success);
+                await LoadAsync();
+            }
+            catch (Exception ex) { Snackbar.Add("Fehler: " + ex.Message, Severity.Error); }
+        }
+    }
+
+    private async Task OpenEditItemDialog(InvoiceItemModel item)
+    {
+        var model = new ServiceItemDialog.ServiceItemFormModel
+        {
+            Description = item.Description,
+            Hours = item.Hours,
+            HourlyRateAmount = item.HourlyRateAmount,
+            TaxRatePercent = item.TaxRatePercent,
+        };
+        var parameters = new DialogParameters<ServiceItemDialog>
+        {
+            { x => x.Model, model },
+            { x => x.IsEdit, true },
+        };
+        var dialog = await DialogService.ShowAsync<ServiceItemDialog>("Position bearbeiten", parameters);
+        var result = await dialog.Result;
+        if (result is { Canceled: false, Data: ServiceItemDialog.ServiceItemFormModel filled })
+        {
+            try
+            {
+                await InvoiceService.UpdateItemAsync(Id, item.Id, new InvoiceItemRequest(
+                    filled.Description,
+                    filled.Hours,
+                    filled.HourlyRateAmount,
+                    "EUR",
+                    filled.TaxRatePercent));
+                Snackbar.Add("Position aktualisiert.", Severity.Success);
+                await LoadAsync();
+            }
+            catch (Exception ex) { Snackbar.Add("Fehler: " + ex.Message, Severity.Error); }
+        }
+    }
+
+    private async Task RemoveItem(Guid itemId)
+    {
+        var parameters = new DialogParameters<ConfirmDialog>
+        {
+            { x => x.ContentText, "Soll diese Position wirklich gelöscht werden?" },
+            { x => x.ButtonText, "Löschen" },
+            { x => x.Color, Color.Error },
+        };
+        var dialog = await DialogService.ShowAsync<ConfirmDialog>("Position löschen", parameters);
+        var result = await dialog.Result;
+        if (result is { Canceled: false })
+        {
+            try
+            {
+                await InvoiceService.RemoveItemAsync(Id, itemId);
+                Snackbar.Add("Position gelöscht.", Severity.Success);
+                await LoadAsync();
+            }
+            catch (Exception ex) { Snackbar.Add("Fehler: " + ex.Message, Severity.Error); }
+        }
+    }
+
+    // ── Helpers ───────────────────────────────────────────────────────────────
+
+    private static Color StatusColor(string status) => status switch
+    {
+        "Draft"     => Color.Default,
+        "Sent"      => Color.Info,
+        "Paid"      => Color.Success,
+        "Cancelled" => Color.Error,
+        _           => Color.Default
+    };
+
+    private static string StatusLabel(string status) => status switch
+    {
+        "Draft"     => "Entwurf",
+        "Sent"      => "Versendet",
+        "Paid"      => "Bezahlt",
+        "Cancelled" => "Storniert",
+        _           => status
+    };
+}

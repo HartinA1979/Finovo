@@ -1,0 +1,88 @@
+@inherits LayoutComponentBase
+@inject NavigationManager Nav
+@inject IJSRuntime JS
+@implements IDisposable
+
+<div class="@($"shell")">
+    <div class="@($"sidebar {(_sideExpanded ? "sidebar--expanded" : "sidebar--collapsed")}")">
+
+        <div class="sidebar__logo-row">
+            <div class="sidebar__logo-placeholder">
+                <span class="sidebar__logo-placeholder-letter">F</span>
+            </div>
+            <div class="sidebar__app-name">
+                <span class="sidebar__app-name-primary">Finovo</span>
+                <span class="sidebar__app-name-sub">Business Suite</span>
+            </div>
+        </div>
+
+        <div class="sidebar__nav">
+            <button class="sidebar__toggle" @onclick="Toggle"
+                    title="@(_sideExpanded ? "Zuklappen" : "Aufklappen")">
+                <MudIcon Icon="@(_sideExpanded ? Icons.Material.Filled.KeyboardArrowLeft : Icons.Material.Filled.KeyboardArrowRight)"
+                         Size="Size.Small" />
+                <span class="sidebar__toggle-label">Zuklappen</span>
+            </button>
+
+            <NavMenu Expanded="_sideExpanded" />
+        </div>
+
+        <div class="sidebar__user-row">
+            <div class="fn-avatar fn-avatar--circle">AH</div>
+            <div class="sidebar__user-info">
+                <span class="sidebar__user-name">Alexander H.</span>
+                <span class="sidebar__user-role">Admin</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="main-area">
+        <div class="topbar">
+            <span class="topbar__title">@PageTitle</span>
+            <div class="topbar__search">
+                <MudIcon Icon="@Icons.Material.Filled.Search" Size="Size.Small" />
+                Suchen…
+                <span class="topbar__search-kbd">⌘K</span>
+            </div>
+        </div>
+        <div class="main-content">
+            @Body
+        </div>
+    </div>
+</div>
+
+@code {
+    private bool _sideExpanded = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        Nav.LocationChanged += OnLocationChanged;
+        try
+        {
+            var stored = await JS.InvokeAsync<string?>("localStorage.getItem", "fn_sideExpanded");
+            _sideExpanded = stored == "true";
+        }
+        catch { }
+    }
+
+    private void OnLocationChanged(object? sender, LocationChangedEventArgs e) => StateHasChanged();
+
+    public void Dispose() => Nav.LocationChanged -= OnLocationChanged;
+
+    private async Task Toggle()
+    {
+        _sideExpanded = !_sideExpanded;
+        try { await JS.InvokeVoidAsync("localStorage.setItem", "fn_sideExpanded", _sideExpanded ? "true" : "false"); }
+        catch { }
+    }
+
+    private string PageTitle => Nav.ToBaseRelativePath(Nav.Uri).Trim('/') switch
+    {
+        ""           => "Dashboard",
+        var p when p.StartsWith("customers") => "Kunden",
+        var p when p.StartsWith("projects")  => "Projekte",
+        var p when p.StartsWith("invoices")  => "Rechnungen",
+        var p when p.StartsWith("settings")  => "Einstellungen",
+        _            => "Finovo",
+    };
+}

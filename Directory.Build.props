@@ -1,0 +1,12 @@
+<Project>
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <Authors>Finovo</Authors>
+    <Company>Finovo</Company>
+    <Copyright>Copyright © Finovo 2025</Copyright>
+  </PropertyGroup>
+</Project>
