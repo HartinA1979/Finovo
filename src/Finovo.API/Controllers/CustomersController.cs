@@ -1,3 +1,4 @@
+using Finovo.Application.Features.Customers.Commands.ActivateCustomer;
 using Finovo.Application.Features.Customers.Commands.CreateCustomer;
 using Finovo.Application.Features.Customers.Commands.DeactivateCustomer;
 using Finovo.Application.Features.Customers.Commands.UpdateCustomer;
@@ -57,6 +58,13 @@ public sealed class CustomersController : ControllerBase
             request.Notes);
 
         await _sender.Send(command, ct);
+        return NoContent();
+    }
+
+    [HttpPost("{id:guid}/activate")]
+    public async Task<IActionResult> Activate(Guid id, CancellationToken ct)
+    {
+        await _sender.Send(new ActivateCustomerCommand(id), ct);
         return NoContent();
     }
 
